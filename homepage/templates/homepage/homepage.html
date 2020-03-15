@@ -1,76 +1,178 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends "../base.html" %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Document</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.6.2/css/bulma.css" />
-</head>
+{% block title %} mainpage {% endblock %}
 
-<body>
-    <section class="hero is-primary">
-        <div class="hero-body">
-            <div class="container">
-                <h1 class="title">
-                    BLOOM
-                </h1>
-            </div>
-        </div>
-    </section>
-    <section class="section">
-        <div class="container">
-            <div class="columns">
-                <div class="column is-offset-4 is-4">
-                    <form method="POST">
-                        {% csrf_token %}
-                        <div class="field has-addons">
-                            <div class="control is-expanded">
-                                {{ form.name }}
-                            </div>
-                            <div class="control">
-                                <button type="submit" class="button is-info">
-                                    Add City
-                                </button>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </section>
-    <section class="section">
-        <div class="container">
-            <div class="columns">
-                <div class="column is-offset-4 is-4">
-                    {% for product in product_list %}
-                    <div class="box">
-                        <article class="media">
-                            <div class="media-left">
-                                <figure class="image is-50x50">
-                                    <img src="http://openweathermap.org/img/w/{{ city_weather.icon }}.png" alt="Image">
-                                </figure>
-                            </div>
-                            <div class="media-content">
-                                <div class="content">
-                                    <p>
-                                        <span class="title">{{ product.name }}</span>
-                                        <br>
-                                        <span class="subtitle">{{ product.store }}</span>
-                                        <br> {{ product.location }}
-                                    </p>
-                                </div>
-                            </div>
-                        </article>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
-    </section>
-    <footer class="footer">
-    </footer>
-</body>
+{% block content %}
 
-</html>
+
+    <nav class="navbar navbar-expand-md navbar-dark bg-dark fixed-top">
+      <a class="navbar-brand" href="./">BLOOM</a>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarsExampleDefault" aria-controls="navbarsExampleDefault" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="navbarsExampleDefault">
+        <ul class="navbar-nav mr-auto">
+        </ul>
+        <form class="form-inline my-2 my-lg-0">
+          <input class="form-control mr-sm-2" type="text" placeholder="Search" aria-label="Search">
+          <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
+        </form>
+      </div>
+    </nav>
+
+    <main role="main" class="container" style="padding-top:70px">
+
+
+      <!-- CARDS -->
+      <div class="overflow-auto float-left h-100">
+
+
+    {% for product in product_list %}
+	<div class="card mt-3" style="width: 25rem;">
+	  <div class="card-body">
+		  <div class="container" style="display:inline-block">
+		  <h5 class="card-title float-left">{{product.name}}</h5>
+		  <h5 class="card-title float-right">${{product.price}}</h5>
+		  </div>
+		  <div class="container" style="display:inline-block">
+		  <p class="card-text float-left">{{product.location}}</p>
+		  <p class="card-text float-right"><del>${{product.old_price}}</del></p>
+		  </div>
+	    <a href="#" class="btn btn-primary" onclick="delivery()">I need a delivery!</a>
+	    <a href="#" class="btn btn-primary" onclick="drawCircles()">I'm going!</a>
+	  </div>
+	</div>
+	{% endfor %}
+
+
+      </div>
+
+	<div class="float-right" style="width: 640px; height: 480px" id="mapContainer"></div>
+
+    <script>
+      // Initialize the platform object:
+      var platform = new H.service.Platform({
+        'apikey': '_rUjaYJvp7j5NUDV2UHXfb23i_sa0eOekP_74XuarQo'
+      });
+
+      // Obtain the default map types from the platform object
+      var maptypes = platform.createDefaultLayers();
+
+      // Instantiate (and display) a map object:
+      var map = new H.Map(
+        document.getElementById('mapContainer'),
+        maptypes.vector.normal.map,
+        {
+          zoom: 15,
+          center: { lng: -79.39, lat: 43.65 }
+        });
+      var ui = H.ui.UI.createDefault(map, maptypes);
+
+	// Enable the event system on the map instance:
+	var mapEvents = new H.mapevents.MapEvents(map);
+
+	// Add event listeners:
+	map.addEventListener('tap', function(evt) {
+	    // Log 'tap' and 'mouse' events:
+	    console.log(evt.type, evt.currentPointer.type);
+	});
+
+	// Instantiate the default behavior, providing the mapEvents object:
+	var behavior = new H.mapevents.Behavior(mapEvents);
+
+	// Define a variable holding SVG mark-up that defines an icon image:
+	var svgMarkup = '<svg width="24" height="24" ' +
+	    'xmlns="http://www.w3.org/2000/svg">' +
+	    '<rect stroke="white" fill="#1b468d" x="1" y="1" width="22" ' +
+	    'height="22" /><text x="12" y="18" font-size="12pt" ' +
+	    'font-family="Arial" font-weight="bold" text-anchor="middle" ' +
+	    'fill="white"></text></svg>';
+
+	populateItems();
+
+
+	function deleteAll() {
+		map.removeObjects(map.getObjects());
+	}
+
+	function populateItems() {
+		{% for product in product_list %}
+
+		// Create an icon, an object holding the latitude and longitude, and a marker:
+		var icon = new H.map.Icon(svgMarkup),
+		coords = {lat: "{{product.latitude}}", lng: "{{product.longitude}}"},
+		    marker = new H.map.Marker(coords, {icon: icon});
+
+		// Add the marker to the map and center the map at the location of the marker:
+		map.addObject(marker);
+		map.setCenter(coords);
+
+		{% endfor %}
+	}
+
+	function drawCircles(){
+		deleteAll();
+		populateItems();
+
+		{% for product in product_list %}
+		addCircleToMap("{{product.name}}","{{product.longitude}}","{{product.latitude}}", false);
+		{% endfor %}
+	}
+
+	function delivery(){
+		deleteAll();
+		populateItems();
+	}
+	
+	function turnYellow(evt){
+
+		var coord  = evt.target.b;
+		addCircleToMap("dfdsa",coord.lng,coord.lat, true);
+		
+		//console.log(coord.lat);
+	}
+
+	function addCircleToMap(name, long, late, isYellow){
+		if (!isYellow){
+		var circ = new H.map.Circle(
+	    // The central point of the circle
+	    {lat:late, lng:long},
+	    // The radius of the circle in meters
+	    500,
+	    {
+	      style: {
+		strokeColor: 'rgba(55, 85, 170, 0.6)', // Color of the perimeter
+		lineWidth: 2,
+		fillColor: 'rgba(0, 128, 0, 0.7)'  // Color of the circle
+	      }
+	    }
+		)
+		circ.addEventListener('pointerdown', turnYellow);
+		} else {
+		var circ = new H.map.Circle(
+	    // The central point of the circle
+	    {lat:late, lng:long},
+	    // The radius of the circle in meters
+	    500,
+	    {
+	      style: {
+		strokeColor: 'rgba(55, 85, 170, 0.6)', // Color of the perimeter
+		lineWidth: 2,
+		fillColor: 'rgba(128, 128, 0, 0.7)'  // Color of the circle
+	      }
+	    }
+		)
+		}
+
+		circ.setData(name);
+	  map.addObject( circ );
+	}
+
+	
+    </script>
+
+    </main><!-- /.container -->
+
+
+{% endblock %}

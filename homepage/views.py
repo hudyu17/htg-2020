@@ -12,7 +12,11 @@ def index(request):
         product_dict = {
             'name': product.name, 
             'store': product.store,
-            'location': product.location
+            'location': product.location,
+            'longitude': product.longitude,
+            'latitude': product.latitude,
+            'price': product.price,
+            'old_price': product.old_price,
         }
         product_list.append(product_dict)
 
